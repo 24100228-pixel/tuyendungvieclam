@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRM ERP SYSTEM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1e3a8a; --secondary: #3b82f6; --success: #10b981; 
+            --danger: #ef4444; --warning: #f59e0b; --bg: #f4f7fe; --sidebar-w: 260px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: #333; height: 100vh; overflow: hidden; }
+        .navbar { background: white; padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 20px; font-weight: 800; color: var(--primary); cursor: pointer; }
+        .wrapper { display: flex; height: calc(100vh - 60px); }
+        .sidebar { width: var(--sidebar-w); background: var(--primary); color: white; display: none; flex-direction: column; }
+        .nav-item { padding: 15px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+        .nav-item:hover, .nav-item.active { background: var(--secondary); border-left: 5px solid #fff; }
+        .main-content { flex: 1; padding: 25px; overflow-y: auto; }
+        .page { display: none; }
+        .active-page { display: block; }
+        .chart-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
+        .bar-item { margin-bottom: 12px; }
+        .bar-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+        .bar-bg { background: #eee; height: 10px; border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: 0.8s ease; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        th { background: #f8fafc; color: var(--primary); position: sticky; top: 0; }
+        .avt-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .btn-primary { background: var(--secondary); color: white; }
+        .btn-outline { border: 1px solid var(--secondary); background: transparent; color: var(--secondary); }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 450px; max-height: 90vh; overflow-y: auto; }
+        .modal-content input, .modal-content select, .modal-content textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .preview-box { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 10px; border: 2px solid var(--secondary); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo" onclick="showPublic()">HRM SYSTEM</div>
+        <div class="auth-nav" id="auth-buttons">
+            <button class="btn btn-outline" onclick="openModal('login')">Đăng nhập</button>
+            <button class="btn btn-primary" onclick="openModal('register')">Đăng ký</button>
+        </div>
+        <div class="auth-nav" id="user-info" style="display:none">
+            <span id="user-display-name" style="font-weight:bold; margin-right:10px"></span>
+            <button class="btn btn-outline" onclick="logout()">Thoát</button>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+        <aside class="sidebar" id="admin-sidebar">
+            <div class="nav-item active" onclick="navigate('page-dash')"><i class="fas fa-chart-bar"></i> Dashboard</div>
+            <div class="nav-item" onclick="navigate('page-nv')"><i class="fas fa-users"></i> Nhân viên</div>
+            <div class="nav-item" onclick="navigate('page-pv')"><i class="fas fa-user-tie"></i> Phỏng vấn</div>
+            <div class="nav-item" onclick="navigate('page-pl')"><i class="fas fa-hand-holding-heart"></i> Phúc lợi</div>
+            <div class="nav-item" onclick="navigate('page-time')"><i class="fas fa-calendar-alt"></i> Chấm công</div>
+            <div class="nav-item" onclick="navigate('page-post-mgr')"><i class="fas fa-bullhorn"></i> Quản lý tin</div>
+        </aside>
+
+        <main class="main-content">
+            <div id="page-public" class="page active-page">
+                <div style="text-align:center; padding: 40px 0;"><h1>Cơ Hội Nghề Nghiệp</h1><p>Gia nhập đội ngũ nhân sự chuyên nghiệp của chúng tôi</p></div>
+                <div id="public-post-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px;"></div>
+            </div>
+
+            <div id="page-dash" class="page">
+                <h2>Báo cáo Thống kê</h2>
+                <div class="chart-container">
+                    <div class="card">
+                        <h3>Trình độ Nhân viên</h3>
+                        <div class="bar-item"><div class="bar-label"><span>Đại học</span><span id="lb-nv-dh">0</span></div><div class="bar-bg"><div id="bar-nv-dh" class="bar-fill" style="background:var(--secondary)"></div></div></div>
+                        <div class="bar-item"><div class="bar-label"><span>Cao đẳng</span><span id="lb-nv-cd">0</span></div><div class="bar-bg"><div id="bar-nv-cd" class="bar-fill" style="background:var(--warning)"></div></div></div>
+                        <div class="bar-item"><div class="bar-label"><span>Thạc sĩ</span><span id="lb-nv-ts">0</span></div><div class="bar-bg"><div id="bar-nv-ts" class="bar-fill" style="background:var(--success)"></div></div></div>
+                    </div>
+                    <div class="card">
+                        <h3>Trình độ Ứng viên</h3>
+                        <div class="bar-item"><div class="bar-label"><span>Đại học</span><span id="lb-pv-dh">0</span></div><div class="bar-bg"><div id="bar-pv-dh" class="bar-fill" style="background:var(--secondary)"></div></div></div>
+                        <div class="bar-item"><div class="bar-label"><span>Cao đẳng</span><span id="lb-pv-cd">0</span></div><div class="bar-bg"><div id="bar-pv-cd" class="bar-fill" style="background:var(--warning)"></div></div></div>
+                        <div class="bar-item"><div class="bar-label"><span>Thạc sĩ</span><span id="lb-pv-ts">0</span></div><div class="bar-bg"><div id="bar-pv-ts" class="bar-fill" style="background:var(--success)"></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-nv" class="page">
+                <div style="display:flex; justify-content:space-between"><h2>Danh sách nhân sự</h2><button class="btn btn-primary" onclick="openModal('nv')">+ Thêm NV</button></div>
+                <div class="card" style="margin-top:20px; overflow-x:auto">
+                    <table><thead><tr><th>Ảnh</th><th>Họ tên</th><th>Email/SĐT</th><th>Học vấn</th><th>Xóa</th></tr></thead><tbody id="list-nv"></tbody></table>
+                </div>
+            </div>
+
+            <div id="page-pl" class="page">
+                <h2>Quản lý Phúc lợi</h2>
+                <div class="card" style="margin-top:20px">
+                    <table><thead><tr><th>Nhân viên</th><th>BHXH</th><th>BHYT</th><th>Thưởng</th></tr></thead><tbody id="list-pl"></tbody></table>
+                </div>
+            </div>
+
+            <div id="page-time" class="page">
+                <h2>Bảng chấm công</h2>
+                <div class="card" style="margin-top:20px; overflow-x:auto">
+                    <table><thead id="head-time"></thead><tbody id="list-time"></tbody></table>
+                </div>
+            </div>
+
+            <div id="page-pv" class="page">
+                <h2>Hồ sơ ứng viên</h2>
+                <div class="card" style="margin-top:20px"><table><thead><tr><th>Vị trí</th><th>Họ tên</th><th>Liên hệ</th><th>Xóa</th></tr></thead><tbody id="list-pv"></tbody></table></div>
+            </div>
+
+            <div id="page-post-mgr" class="page">
+                <div style="display:flex; justify-content:space-between"><h2>Quản lý tin tuyển dụng</h2><button class="btn btn-primary" onclick="openModal('post')">+ Tin mới</button></div>
+                <div id="mgr-post-list" class="chart-container" style="margin-top:20px"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="modal-login"><div class="modal-content"><h3>Đăng nhập</h3><input id="l-user" placeholder="Tài khoản"><input type="password" id="l-pass" placeholder="Mật khẩu"><button class="btn btn-primary" style="width:100%" onclick="handleLogin()">Đăng nhập</button></div></div>
+    <div class="modal" id="modal-register"><div class="modal-content"><h3>Đăng ký</h3><input id="r-user" placeholder="Tài khoản mới"><input type="password" id="r-pass" placeholder="Mật khẩu"><select id="r-role"><option value="user">Ứng viên</option><option value="admin">Admin</option></select><button class="btn btn-primary" style="width:100%" onclick="handleRegister()">Tạo tài khoản</button></div></div>
+    <div class="modal" id="modal-nv">
+        <div class="modal-content">
+            <h3>Hồ sơ nhân viên</h3>
+            <img src="https://via.placeholder.com/80" id="nv-avt-preview" class="preview-box">
+            <input type="file" onchange="previewImg(this, 'nv-avt-preview', 'nv-avt-base64')">
+            <input type="hidden" id="nv-avt-base64">
+            <input id="nv-name" placeholder="Họ tên"><input id="nv-email" placeholder="Email"><input id="nv-phone" placeholder="Số điện thoại">
+            <select id="nv-edu"><option>Đại học</option><option>Cao đẳng</option><option>Thạc sĩ</option></select>
+            <button class="btn btn-primary" style="width:100%" onclick="saveEmployee()">Lưu hồ sơ</button>
+        </div>
+    </div>
+    <div class="modal" id="modal-apply"><div class="modal-content"><h3>Ứng tuyển: <span id="apply-title"></span></h3><input id="a-name" placeholder="Họ tên"><input id="a-email" placeholder="Email"><input id="a-phone" placeholder="SĐT"><select id="a-edu"><option>Đại học</option><option>Cao đẳng</option><option>Thạc sĩ</option></select><button class="btn btn-primary" style="width:100%" onclick="submitApply()">Nộp đơn</button></div></div>
+    <div class="modal" id="modal-post"><div class="modal-content"><h3>Tin đăng mới</h3><input id="p-title" placeholder="Tiêu đề"><textarea id="p-desc" placeholder="Chi tiết công việc"></textarea><button class="btn btn-primary" style="width:100%" onclick="savePost()">Đăng tin</button></div></div>
+
+    <script>
+        let currentUser = null;
+        let users = JSON.parse(localStorage.getItem('sys_users')) || [{u:'admin', p:'123', role:'admin'}];
+        let emps = JSON.parse(localStorage.getItem('sys_emps')) || [];
+        let posts = JSON.parse(localStorage.getItem('sys_posts')) || [{id:1, title:'Nhân viên IT', desc:'Lương thỏa thuận, kinh nghiệm 1 năm.'}];
+        let applies = JSON.parse(localStorage.getItem('sys_applies')) || [];
+        let att = JSON.parse(localStorage.getItem('sys_att')) || {};
+
+        function previewImg(input, imgId, hiddenId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => { document.getElementById(imgId).src = e.target.result; document.getElementById(hiddenId).value = e.target.result; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('l-user').value, p = document.getElementById('l-pass').value;
+            const user = users.find(x => x.u === u && x.p === p);
+            if(user) { currentUser = user; toggleUI(); closeModal(); if(user.role==='admin') navigate('page-dash'); }
+            else alert("Sai tài khoản!");
+        }
+
+        function handleRegister() {
+            users.push({u:document.getElementById('r-user').value, p:document.getElementById('r-pass').value, role:document.getElementById('r-role').value});
+            localStorage.setItem('sys_users', JSON.stringify(users)); closeModal(); alert("Đăng ký thành công!");
+        }
+
+        function toggleUI() {
+            if(currentUser) {
+                document.getElementById('auth-buttons').style.display = 'none';
+                document.getElementById('user-info').style.display = 'flex';
+                document.getElementById('user-display-name').innerText = currentUser.u;
+                if(currentUser.role === 'admin') document.getElementById('admin-sidebar').style.display = 'flex';
+            }
+        }
+
+        function logout() { currentUser = null; location.reload(); }
+        function navigate(id) { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active-page')); document.getElementById(id).classList.add('active-page'); renderAll(); }
+        function openModal(id, extra) { if(id==='apply') document.getElementById('apply-title').innerText = extra; document.getElementById('modal-'+id).style.display = 'flex'; }
+        function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+
+        function saveEmployee() {
+            emps.push({id:Date.now(), name:document.getElementById('nv-name').value, email:document.getElementById('nv-email').value, phone:document.getElementById('nv-phone').value, edu:document.getElementById('nv-edu').value, avt:document.getElementById('nv-avt-base64').value || 'https://via.placeholder.com/80', bl:{bhxh:false, bhyt:false, bonus:false}});
+            localStorage.setItem('sys_emps', JSON.stringify(emps)); closeModal(); renderAll();
+        }
+
+        function savePost() {
+            posts.unshift({id:Date.now(), title:document.getElementById('p-title').value, desc:document.getElementById('p-desc').value});
+            localStorage.setItem('sys_posts', JSON.stringify(posts)); closeModal(); renderAll();
+        }
+
+        function submitApply() {
+            applies.push({id:Date.now(), pos:document.getElementById('apply-title').innerText, name:document.getElementById('a-name').value, email:document.getElementById('a-email').value, phone:document.getElementById('a-phone').value, edu:document.getElementById('a-edu').value});
+            localStorage.setItem('sys_applies', JSON.stringify(applies)); closeModal(); alert("Gửi thành công!"); renderAll();
+        }
+
+        function renderAll() {
+            const updateChart = (type, data) => {
+                ['dh','cd','ts'].forEach(k => {
+                    const label = k==='dh'?'Đại học':k==='cd'?'Cao đẳng':'Thạc sĩ';
+                    const count = data.filter(x=>x.edu===label).length;
+                    document.getElementById(`lb-${type}-${k}`).innerText = count;
+                    document.getElementById(`bar-${type}-${k}`).style.width = (count/(data.length||1)*100)+'%';
+                });
+            }
+            updateChart('nv', emps); updateChart('pv', applies);
+
+            document.getElementById('list-nv').innerHTML = emps.map(e => `<tr><td><img src="${e.avt}" class="avt-img"></td><td><b>${e.name}</b></td><td>${e.email}<br>${e.phone}</td><td>${e.edu}</td><td><i class="fas fa-trash" onclick="deleteItem('emps',${e.id})" style="color:red;cursor:pointer"></i></td></tr>`).join('');
+            document.getElementById('list-pl').innerHTML = emps.map(e => `<tr><td><b>${e.name}</b></td><td><input type="checkbox" ${e.bl.bhxh?'checked':''} onclick="toggleBL(${e.id},'bhxh')"></td><td><input type="checkbox" ${e.bl.bhyt?'checked':''} onclick="toggleBL(${e.id},'bhyt')"></td><td><input type="checkbox" ${e.bl.bonus?'checked':''} onclick="toggleBL(${e.id},'bonus')"></td></tr>`).join('');
+
+            let h = '<tr><th>Nhân viên</th>'; for(let i=1; i<=30; i++) h += `<th>${i}</th>`;
+            document.getElementById('head-time').innerHTML = h + '</tr>';
+            document.getElementById('list-time').innerHTML = emps.map(e => {
+                let r = `<td><b>${e.name}</b></td>`;
+                for(let i=1; i<=30; i++) { let k=`${e.id}-${i}`, v=att[k]||'V'; r+=`<td onclick="toggleAtt('${k}')" style="color:${v=='X'?'red':'green'};cursor:pointer"><b>${v}</b></td>`; }
+                return `<tr>${r}</tr>`;
+            }).join('');
+
+            const postHTML = posts.map(p => `<div class="card"><h3>${p.title}</h3><p style="font-size:12px;margin:10px 0">${p.desc}</p><button class="btn btn-primary" style="width:100%" onclick="openModal('apply','${p.title}')">Ứng tuyển</button>${currentUser?.role==='admin'?`<i class="fas fa-trash" style="position:absolute;top:10px;right:10px;color:#ccc;cursor:pointer" onclick="deleteItem('posts',${p.id})"></i>`:''}</div>`).join('');
+            document.getElementById('public-post-list').innerHTML = postHTML;
+            if(document.getElementById('mgr-post-list')) document.getElementById('mgr-post-list').innerHTML = postHTML;
+
+            document.getElementById('list-pv').innerHTML = applies.map(a => `<tr><td>${a.pos}</td><td><b>${a.name}</b></td><td>${a.email}<br>${a.phone}</td><td><i class="fas fa-trash" style="color:red;cursor:pointer" onclick="deleteItem('applies',${a.id})"></i></td></tr>`).join('');
+        }
+
+        function deleteItem(type, id) {
+            if(type === 'emps') emps = emps.filter(x => x.id !== id);
+            if(type === 'posts') posts = posts.filter(x => x.id !== id);
+            if(type === 'applies') applies = applies.filter(x => x.id !== id);
+            localStorage.setItem('sys_'+type, JSON.stringify(eval(type)));
+            renderAll();
+        }
+
+        function toggleBL(id, key) {
+            let e = emps.find(x => x.id === id);
+            e.bl[key] = !e.bl[key];
+            localStorage.setItem('sys_emps', JSON.stringify(emps));
+            renderAll();
+        }
+
+        function toggleAtt(k) {
+            att[k] = (att[k] === 'X' ? 'V' : 'X');
+            localStorage.setItem('sys_att', JSON.stringify(att));
+            renderAll();
+        }
+
+        function showPublic() { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active-page')); document.getElementById('page-public').classList.add('active-page'); renderAll(); }
+        renderAll();
+    </script>
+</body>
+</html>
